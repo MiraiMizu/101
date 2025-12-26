@@ -31,6 +31,22 @@ class RoomManager {
         return room;
     }
 
+    getPublicRooms() {
+        // Return array of rooms suitable for display (hide sensitive data)
+        const publicRooms = [];
+        for (const [id, room] of this.rooms) {
+            if (room.gameState === 'WAITING') {
+                publicRooms.push({
+                    id: room.id,
+                    host: room.players.find(p => p.isHost)?.name || 'Unknown',
+                    playerCount: room.players.length,
+                    maxPlayers: room.maxPlayers
+                });
+            }
+        }
+        return publicRooms;
+    }
+
     joinRoom(roomId, socketId, playerName) {
         const room = this.rooms.get(roomId);
         if (!room) return { error: 'Room not found' };

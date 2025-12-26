@@ -32,9 +32,17 @@ io.on('connection', (socket) => {
             socket.join(room.id);
             callback({ success: true, room });
             console.log(`Room created: ${room.id} by ${playerName}`);
+
+            // Broadcast room list update
+            io.emit('rooms_list_update', roomManager.getPublicRooms());
         } catch (e) {
             callback({ success: false, error: e.message });
         }
+    });
+
+    socket.on('get_rooms', (callback) => {
+        const rooms = roomManager.getPublicRooms();
+        callback(rooms);
     });
 
     socket.on('join_room', ({ roomId, playerName }, callback) => {
@@ -48,6 +56,7 @@ io.on('connection', (socket) => {
                 socket.join(normalizedRoomId);
                 callback({ success: true, room: result.room });
                 io.to(normalizedRoomId).emit('room_update', result.room);
+                io.emit('rooms_list_update', roomManager.getPublicRooms()); // Broadcast update
                 console.log(`${playerName} joined room ${normalizedRoomId}`);
             }
         } catch (e) {
@@ -180,9 +189,12 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
         const { roomId, roomIsEmpty } = roomManager.leaveRoom(socket.id);
-        if (roomId && !roomIsEmpty) {
-            const room = roomManager.getRoom(roomId);
-            io.to(roomId).emit('room_update', room);
+        if (roomId) {
+            if (!roomIsEmpty) {
+                const room = roomManager.getRoom(roomId);
+                io.to(roomId).emit('room_update', room);
+            }
+            io.emit('rooms_list_update', roomManager.getPublicRooms());
         }
     });
 });
