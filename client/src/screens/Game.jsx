@@ -143,19 +143,22 @@ export const Game = ({ room: initialRoom, playerName }) => {
     }
 
     return (
-        <div className="min-h-screen bg-[#2c3e50] relative overflow-hidden flex flex-col">
+        <div className="min-h-screen bg-[#1a472a] relative overflow-hidden flex flex-col font-sans select-none">
+            {/* Table Texture/Gradient */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#2d6a4f_0%,_#1a472a_100%)] opacity-80 pointer-events-none" />
+
             {/* Top Info Bar */}
-            <div className="bg-slate-900 text-white p-2 flex justify-between items-center z-10 shadow-md">
-                <div className="font-mono text-xl">Room: {room.id}</div>
-                <div>
-                    Turn: <span className={isMyTurn ? "text-green-400 font-bold" : "text-slate-400"}>
-                        {isMyTurn ? "YOUR TURN" : room.players[room.turnIndex]?.name}
+            <div className="bg-black/30 backdrop-blur text-white p-3 flex justify-between items-center z-10 shadow-lg border-b border-white/10">
+                <div className="font-bold text-xl tracking-wider text-amber-400 drop-shadow-md">Table: {room.id}</div>
+                <div className="flex items-center gap-4">
+                    <span className={clsx("px-4 py-1 rounded-full font-bold transition-all", isMyTurn ? "bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.6)] scale-110" : "bg-slate-700/50 text-slate-300")}>
+                        {isMyTurn ? "YOUR TURN" : `${room.players[room.turnIndex]?.name}'s Turn`}
                     </span>
                 </div>
                 {gameData && (
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-400">Indicator:</span>
-                        <div className="scale-75 origin-center -my-1">
+                    <div className="flex items-center gap-2 bg-slate-800/50 px-3 py-1 rounded-lg border border-white/10">
+                        <span className="text-sm text-slate-300 uppercase tracking-widest text-[10px]">Indicator</span>
+                        <div className="scale-[0.6] origin-center -my-3">
                             <Tile color={gameData.indicatorTile.color} value={gameData.indicatorTile.value} type={gameData.indicatorTile.type} />
                         </div>
                     </div>
@@ -163,57 +166,74 @@ export const Game = ({ room: initialRoom, playerName }) => {
             </div>
 
             {/* Main Game Area */}
-            <div className="flex-1 flex flex-col relative p-4">
+            <div className="flex-1 flex flex-col relative p-4 z-0">
 
-                {/* Opponents (Seated) */}
+                {/* Opponents */}
                 {(() => {
                     const pIndex = room.players.findIndex(p => p.id === myPlayerId);
 
                     return room.players.map((p, i) => {
-                        if (p.id === myPlayerId) return null; // Skip self
+                        if (p.id === myPlayerId) return null;
 
                         const relativeIndex = (i - pIndex + 4) % 4;
-                        let positionClass = '';
+                        let posStyles = {};
+                        let alignClass = '';
 
-                        // 1 = Right, 2 = Top, 3 = Left
-                        if (relativeIndex === 1) positionClass = "absolute right-4 top-1/2 -translate-y-1/2 flex-col items-end";
-                        else if (relativeIndex === 2) positionClass = "absolute top-4 left-1/2 -translate-x-1/2 flex-col items-center";
-                        else if (relativeIndex === 3) positionClass = "absolute left-4 top-1/2 -translate-y-1/2 flex-col items-start";
-                        else return null; // Should not happen for <4 players? If 2 players, relative is 1.
+                        // Positioning percentage-based to avoid fixed pixel Overlaps
+                        if (relativeIndex === 1) { // Right
+                            posStyles = { right: '20px', top: '50%', transform: 'translateY(-50%)' };
+                            alignClass = 'items-end';
+                        } else if (relativeIndex === 2) { // Top
+                            posStyles = { top: '20px', left: '50%', transform: 'translateX(-50%)' };
+                            alignClass = 'items-center';
+                        } else if (relativeIndex === 3) { // Left
+                            posStyles = { left: '20px', top: '50%', transform: 'translateY(-50%)' };
+                            alignClass = 'items-start';
+                        } else return null;
+
+                        const isActive = room.turnIndex === i;
 
                         return (
-                            <div key={p.id} className={clsx("flex gap-2 bg-slate-800 text-white p-3 rounded-lg shadow-lg opacity-90 min-w-[120px] transition-all", positionClass)}>
-                                <div className="font-bold text-lg truncate flex items-center gap-2">
-                                    {p.name}
-                                    {room.turnIndex === i && <div className="w-3 h-3 bg-green-500 rounded-full animate-ping" />}
+                            <div key={p.id} className={clsx("absolute flex flex-col p-2 rounded-xl transition-all duration-500", alignClass, isActive ? "bg-white/10 shadow-[0_0_20px_rgba(255,255,255,0.2)]" : "bg-transparent")} style={posStyles}>
+                                {/* Avatar Circle */}
+                                <div className={clsx("w-16 h-16 rounded-full border-4 flex items-center justify-center bg-slate-800 shadow-xl mb-2 relative", isActive ? "border-green-500 scale-110" : "border-slate-600")}>
+                                    <span className="text-xl font-bold text-white">{p.name.charAt(0).toUpperCase()}</span>
+                                    {isActive && <div className="absolute -bottom-1 w-6 h-6 bg-green-500 rounded-full border-2 border-slate-900 animate-bounce" />}
                                 </div>
-                                <div className="text-sm text-slate-300">{p.scores || 0} pts</div>
-                                <div className="text-xs text-slate-500">{p.hand?.length || 0} Tiles</div>
 
-                                {/* Show Discard Pile for this opponent if desired, 
-                                    but usually we only show Previous Discard in center for interaction. 
-                                    Visual only here? */}
+                                <div className="bg-black/60 px-3 py-1 rounded text-white text-sm font-bold backdrop-blur-sm whitespace-nowrap mb-1">{p.name}</div>
+                                <div className="flex gap-1">
+                                    <div className="text-[10px] bg-blue-600/80 px-2 rounded text-white">Score: {p.scores || 0}</div>
+                                    <div className="text-[10px] bg-slate-600/80 px-2 rounded text-white">{p.hand?.length} Tiles</div>
+                                </div>
                             </div>
                         );
                     });
                 })()}
 
-                {/* Center Area (Deck & Discards) */}
-                <div className="flex-1 flex items-center justify-center gap-8 md:gap-16">
+                {/* Center Table (Deck & Discards) */}
+                <div className="flex-1 flex items-center justify-center gap-12 md:gap-24 relative">
                     {/* Deck */}
-                    <div
-                        onClick={() => drawTile('deck')}
-                        className="w-24 h-32 bg-blue-900 rounded-lg border-4 border-white shadow-2xl flex items-center justify-center cursor-pointer hover:-translate-y-1 transition-transform relative group"
-                    >
-                        <div className="text-white font-bold text-xl">DECK</div>
-                        <div className="absolute -bottom-8 text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                            {gameData?.deckSize || 0} Left
+                    <div className="relative group">
+                        <div
+                            onClick={() => drawTile('deck')}
+                            className="w-28 h-36 bg-[#2c4c7c] rounded-lg border-[3px] border-[#a0aec0] shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95"
+                        >
+                            <div className="w-20 h-28 border-2 border-dashed border-[#5473a1] rounded flex items-center justify-center">
+                                <span className="text-white/20 font-bold text-2xl rotate-45">101</span>
+                            </div>
+                        </div>
+                        <div className="absolute -top-8 w-full text-center text-white/50 text-xs font-bold uppercase tracking-wider">
+                            Deck ({gameData?.deckSize || 0})
                         </div>
                     </div>
 
-                    {/* Previous Player Discard */}
-                    <div className="flex flex-col items-center">
-                        <div className="text-white mb-2 font-bold text-sm">Prev Discard</div>
+                    {/* Previous Player Discard (Left of User or Center?) 
+                        Usually in real life, discard is to your right, but in digital, often center. 
+                        Let's put "Previous Player's Discard" clearly in center-left.
+                    */}
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="text-white/50 text-xs font-bold uppercase tracking-wider">Prev Discard</div>
                         {(() => {
                             const pIndex = room.players.findIndex(p => p.id === myPlayerId);
                             const prevIndex = (pIndex - 1 + room.players.length) % room.players.length;
@@ -221,67 +241,72 @@ export const Game = ({ room: initialRoom, playerName }) => {
                             const discardPile = room.discards?.[prevPlayerId] || [];
                             const topCard = discardPile[discardPile.length - 1];
 
-                            return topCard ? (
-                                <Tile
-                                    color={topCard.color}
-                                    value={topCard.value}
-                                    type={topCard.type}
-                                    onClick={() => drawTile('discard')}
-                                    className="hover:scale-105"
-                                />
-                            ) : (
-                                <div className="w-12 h-16 border-2 border-dashed border-slate-500 rounded flex items-center justify-center text-slate-500 text-xs">Empty</div>
+                            return (
+                                <div className={clsx("transition-transform hover:scale-110", !topCard && "opacity-50")}>
+                                    {topCard ? (
+                                        <Tile
+                                            color={topCard.color}
+                                            value={topCard.value}
+                                            type={topCard.type}
+                                            onClick={() => drawTile('discard')}
+                                            className="shadow-2xl cursor-pointer"
+                                        />
+                                    ) : (
+                                        <div className="w-12 h-16 border-2 border-white/20 rounded-lg flex items-center justify-center">
+                                            <span className="text-white/20 text-xs">Empty</span>
+                                        </div>
+                                    )}
+                                </div>
                             );
                         })()}
                     </div>
 
-                    {/* My Discard Pile */}
-                    <div className="flex flex-col items-center opacity-75">
-                        <div className="text-white mb-2 font-bold text-sm">My Discard</div>
+                    {/* My Discard Pile (Visual only, to show what I discarded) */}
+                    <div className="flex flex-col items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
+                        <div className="text-white/50 text-xs font-bold uppercase tracking-wider">My Stack</div>
                         {(() => {
                             const discardPile = room.discards?.[myPlayerId] || [];
                             const topCard = discardPile[discardPile.length - 1];
-
                             return topCard ? (
-                                <Tile
-                                    color={topCard.color}
-                                    value={topCard.value}
-                                    type={topCard.type}
-                                />
+                                <Tile color={topCard.color} value={topCard.value} type={topCard.type} className="scale-90 grayscale-[0.3]" />
                             ) : (
-                                <div className="w-12 h-16 border-2 border-dashed border-slate-500 rounded flex items-center justify-center text-slate-500 text-xs text-center">Empty</div>
+                                <div className="w-12 h-16 border-2 border-dashed border-white/10 rounded-lg" />
                             );
                         })()}
                     </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="absolute bottom-[260px] md:bottom-[280px] w-full flex justify-center gap-4 z-20 pointer-events-none">
-                    <div className="pointer-events-auto flex gap-2">
-                        <button onClick={() => sortHand('color')} className="bg-slate-700 hover:bg-slate-600 text-white text-sm py-1 px-3 rounded shadow">Sort: 123</button>
-                        <button onClick={() => sortHand('value')} className="bg-slate-700 hover:bg-slate-600 text-white text-sm py-1 px-3 rounded shadow">Sort: 777</button>
+                {/* My Action Area (Rack + Buttons) */}
+                <div className="mt-auto relative z-20 flex flex-col items-center gap-4">
+                    {/* Action Buttons Floating above Rack */}
+                    <div className="flex gap-4 items-center mb-2">
+                        <div className="bg-black/40 p-1 rounded-lg flex gap-1 backdrop-blur-md border border-white/5">
+                            <button onClick={() => sortHand('color')} className="px-4 py-1.5 rounded bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition-colors">Sort Color</button>
+                            <button onClick={() => sortHand('value')} className="px-4 py-1.5 rounded bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition-colors">Sort 777</button>
+                        </div>
+
+                        {isMyTurn && hand.length > 21 && (
+                            <button
+                                onClick={discardTile}
+                                disabled={selectedTileIndex === null}
+                                className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold py-2 px-8 rounded-full shadow-[0_0_20px_rgba(220,38,38,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all transform hover:-translate-y-1 active:translate-y-0"
+                            >
+                                DISCARD TILE
+                            </button>
+                        )}
                     </div>
 
-                    {isMyTurn && hand.length > 21 && (
-                        <button
-                            onClick={discardTile}
-                            disabled={selectedTileIndex === null}
-                            className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded shadow-lg disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto animate-bounce"
-                        >
-                            DISCARD SELECTED
-                        </button>
-                    )}
+                    <div className="w-full max-w-[95vw] md:max-w-4xl">
+                        <Rack
+                            tiles={hand}
+                            selectedTileIndex={selectedTileIndex}
+                            onClickTile={setSelectedTileIndex}
+                        />
+                    </div>
                 </div>
 
-                {/* My Rack */}
-                <div className="mt-auto z-10">
-                    <Rack
-                        tiles={hand}
-                        selectedTileIndex={selectedTileIndex}
-                        onClickTile={setSelectedTileIndex}
-                    />
-                </div>
             </div>
         </div>
     );
 };
+```
