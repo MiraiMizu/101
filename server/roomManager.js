@@ -111,14 +111,16 @@ class RoomManager {
                 if (room.deck.length > 0) {
                     drawnTile = room.deck.pop();
                 } else {
-                    // Deck empty, try discard? Or invalid state?
-                    // In basic rules, if deck empty, game ends or reshuffle.
-                    // We'll assume deck not empty for MVP or just take from discard if deck empty.
-                    // For now, if deck empty, take from discard.
+                    // Try draw from discard
                     const prevIndex = (playerIndex - 1 + room.players.length) % room.players.length;
                     const prevId = room.players[prevIndex].id;
                     if (room.discards[prevId].length > 0) {
                         drawnTile = room.discards[prevId].pop();
+                    } else {
+                        // BOTH Empty - Game Over (Draw)
+                        room.gameState = 'ENDED';
+                        // Ideally notify, but for now just stop.
+                        return;
                     }
                 }
 
@@ -130,6 +132,9 @@ class RoomManager {
                     // Better pattern: RoomManager returns the result state, Controller emits.
                     // BUT `setTimeout` breaks the sync return pattern.
                     // We will need a callback or event emitter in RoomManager, or pass a callback.
+                } else {
+                    // Should be covered above
+                    return;
                 }
             }
 

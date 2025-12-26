@@ -165,15 +165,38 @@ export const Game = ({ room: initialRoom, playerName }) => {
             {/* Main Game Area */}
             <div className="flex-1 flex flex-col relative p-4">
 
-                {/* Opponents (Simplified) */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 flex gap-4">
-                    {room.players.filter(p => p.id !== myPlayerId).map(p => (
-                        <div key={p.id} className="bg-slate-800 text-white p-2 rounded shadow opacity-80 min-w-[100px]">
-                            <div className="font-bold text-center truncate">{p.name}</div>
-                            <div className="text-xs text-center">{p.score || 0} pts</div>
-                        </div>
-                    ))}
-                </div>
+                {/* Opponents (Seated) */}
+                {(() => {
+                    const pIndex = room.players.findIndex(p => p.id === myPlayerId);
+
+                    return room.players.map((p, i) => {
+                        if (p.id === myPlayerId) return null; // Skip self
+
+                        const relativeIndex = (i - pIndex + 4) % 4;
+                        let positionClass = '';
+
+                        // 1 = Right, 2 = Top, 3 = Left
+                        if (relativeIndex === 1) positionClass = "absolute right-4 top-1/2 -translate-y-1/2 flex-col items-end";
+                        else if (relativeIndex === 2) positionClass = "absolute top-4 left-1/2 -translate-x-1/2 flex-col items-center";
+                        else if (relativeIndex === 3) positionClass = "absolute left-4 top-1/2 -translate-y-1/2 flex-col items-start";
+                        else return null; // Should not happen for <4 players? If 2 players, relative is 1.
+
+                        return (
+                            <div key={p.id} className={clsx("flex gap-2 bg-slate-800 text-white p-3 rounded-lg shadow-lg opacity-90 min-w-[120px] transition-all", positionClass)}>
+                                <div className="font-bold text-lg truncate flex items-center gap-2">
+                                    {p.name}
+                                    {room.turnIndex === i && <div className="w-3 h-3 bg-green-500 rounded-full animate-ping" />}
+                                </div>
+                                <div className="text-sm text-slate-300">{p.scores || 0} pts</div>
+                                <div className="text-xs text-slate-500">{p.hand?.length || 0} Tiles</div>
+
+                                {/* Show Discard Pile for this opponent if desired, 
+                                    but usually we only show Previous Discard in center for interaction. 
+                                    Visual only here? */}
+                            </div>
+                        );
+                    });
+                })()}
 
                 {/* Center Area (Deck & Discards) */}
                 <div className="flex-1 flex items-center justify-center gap-8 md:gap-16">
