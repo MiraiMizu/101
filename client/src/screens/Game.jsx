@@ -99,45 +99,75 @@ export const Game = ({ room: initialRoom, playerName }) => {
         setHand(newHand);
     };
 
+    // Unified Waiting Room Layout (Green Table)
     if (room.gameState === 'WAITING') {
         return (
-            <div className="min-h-screen bg-slate-900 text-white p-8 flex flex-col items-center">
-                <h1 className="text-3xl font-bold mb-4">Waiting Room: {room.id}</h1>
-                <div className="bg-slate-800 p-6 rounded-lg w-full max-w-lg mb-6">
-                    <h2 className="text-xl mb-4 text-slate-400">Players ({room.players.length}/4)</h2>
-                    <ul className="space-y-2">
-                        {room.players.map(p => (
-                            <li key={p.id} className="flex justify-between items-center bg-slate-700 p-3 rounded">
-                                <span>{p.name} {p.isHost && '(Host)'}</span>
-                                {p.name === playerName && <span className="text-xs bg-blue-600 px-2 py-1 rounded">YOU</span>}
-                            </li>
-                        ))}
-                    </ul>
+            <div className="min-h-screen bg-[#1a472a] relative overflow-hidden flex flex-col font-sans select-none">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#2d6a4f_0%,_#1a472a_100%)] opacity-80 pointer-events-none" />
+
+                {/* Header */}
+                <div className="bg-black/30 backdrop-blur text-white p-4 flex justify-between items-center z-10 border-b border-white/10">
+                    <div className="font-bold text-xl text-amber-400">Table: {room.id}</div>
+                    <div className="bg-slate-800/60 px-4 py-1 rounded-full text-sm">Waiting for players...</div>
                 </div>
 
-                {isHost && (
-                    <div className="flex flex-col gap-4">
-                        <button
-                            onClick={handleStartGame}
-                            className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg transition-transform hover:scale-105"
-                        >
-                            START GAME
-                        </button>
+                {/* Seating Visualization */}
+                <div className="flex-1 relative">
+                    {/* Center Info Card */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/40 backdrop-blur-md p-8 rounded-2xl border border-white/10 text-center shadow-2xl">
+                        <h2 className="text-3xl font-bold text-white mb-2">Ready to Play?</h2>
+                        <p className="text-slate-300 mb-6">{room.players.length} / 4 Players Joined</p>
 
-                        <button
-                            onClick={() => {
-                                socket.emit('add_bot', { roomId: room.id }, (res) => {
-                                    if (!res.success) alert(res.error);
-                                });
-                            }}
-                            className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-full shadow transition-colors"
-                        >
-                            + ADD BOT
-                        </button>
+                        <div className="flex flex-col gap-3">
+                            {isHost ? (
+                                <>
+                                    <button
+                                        onClick={handleStartGame}
+                                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-4 px-12 rounded-xl shadow-lg shadow-green-900/50 text-xl transition-transform hover:scale-105"
+                                    >
+                                        START GAME
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            socket.emit('add_bot', { roomId: room.id }, (res) => {
+                                                if (!res.success) alert(res.error);
+                                            });
+                                        }}
+                                        className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-8 rounded-lg border border-white/20 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <span>🤖</span> Add Bot Player
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="text-slate-400 animate-pulse bg-black/20 p-4 rounded-lg">
+                                    Waiting for Host to start...
+                                </div>
+                            )}
+                        </div>
                     </div>
-                )}
 
-                {!isHost && <p className="animate-pulse text-slate-500">Waiting for host to start...</p>}
+                    {/* Players Seated */}
+                    {room.players.map((p, i) => {
+                        // Simple seating visual based on join order
+                        // 0: Bottom (Host?), 1: Right, 2: Top, 3: Left
+                        // Since we don't know "my" seat relative to others until game starts, just show absolute positions for visual flair
+                        let posStyles = {};
+                        if (i === 0) posStyles = { bottom: '20px', left: '50%', transform: 'translateX(-50%)' };
+                        else if (i === 1) posStyles = { right: '20px', top: '50%', transform: 'translateY(-50%)' };
+                        else if (i === 2) posStyles = { top: '20px', left: '50%', transform: 'translateX(-50%)' };
+                        else if (i === 3) posStyles = { left: '20px', top: '50%', transform: 'translateY(-50%)' };
+
+                        return (
+                            <div key={p.id} className="absolute flex flex-col items-center" style={posStyles}>
+                                <div className="w-20 h-20 bg-slate-800 rounded-full border-4 border-white/20 shadow-xl flex items-center justify-center mb-2 relative">
+                                    <span className="text-2xl font-bold text-white">{p.name.charAt(0)}</span>
+                                    {p.isHost && <div className="absolute -top-2 -right-2 bg-amber-500 text-xs px-2 py-0.5 rounded-full border border-amber-900 shadow">HOST</div>}
+                                </div>
+                                <div className="bg-black/60 px-4 py-1 rounded text-white font-bold backdrop-blur">{p.name}</div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         );
     }

@@ -30,43 +30,56 @@ const path = require('path');
 
         // 2. Click Create Room
         console.log('Creating Room...');
-        const createBtnSelector = "button.bg-blue-600";
-        await page.waitForSelector(createBtnSelector);
-        await page.click(createBtnSelector);
+        // Use evaluate to find button by text
+        await page.waitForFunction(() => {
+            const btns = [...document.querySelectorAll('button')];
+            return btns.some(b => b.innerText.includes('Create New Table'));
+        });
 
-        // Wait for Lobby transition
+        await page.evaluate(() => {
+            const btns = [...document.querySelectorAll('button')];
+            const btn = btns.find(b => b.innerText.includes('Create New Table'));
+            if (btn) btn.click();
+        });
+
+        // Wait for Lobby transition (Room ID to appear in URL or on screen)
         console.log('Waiting for Lobby...');
-        await page.waitForSelector('.bg-slate-900', { timeout: 10000 });
+        await page.waitForSelector('.bg-black\\/30', { timeout: 10000 });
 
         // 3. Add Bots (Click 3 times)
         console.log('Adding Bots...');
-        // Wait for button to be visible
-        const addBotSelector = "button.bg-purple-600";
         try {
-            await page.waitForSelector(addBotSelector, { timeout: 5000 }); // Wait for it to appear
-            const addBotBtns = await page.$$(addBotSelector);
-            if (addBotBtns.length > 0) {
-                for (let i = 0; i < 3; i++) {
-                    await page.click(addBotSelector);
-                    console.log(`Bot ${i + 1} added`);
-                    await new Promise(r => setTimeout(r, 600));
-                }
+            await page.waitForFunction(() => {
+                const btns = [...document.querySelectorAll('button')];
+                return btns.some(b => b.innerText.includes('ADD BOT'));
+            }, { timeout: 5000 });
+
+            for (let i = 0; i < 3; i++) {
+                await page.evaluate(() => {
+                    const btns = [...document.querySelectorAll('button')];
+                    const btn = btns.find(b => b.innerText.includes('ADD BOT'));
+                    if (btn) btn.click();
+                });
+                console.log(`Bot ${i + 1} added`);
+                await new Promise(r => setTimeout(r, 600));
             }
         } catch (e) {
-            console.warn('Add Bot button not found:', e.message);
+            console.warn('Add Bot fail:', e.message);
         }
 
         // 4. Start Game
         console.log('Starting Game...');
-        const startBtnSelector = "button.bg-green-600"; // Note: Join button is also green, but we are in Game screen now hopefully
         try {
-            // We might need to ensure we are not seeing Join button.
-            // Join button is in Lobby. If we successfully created room, we are in Game.
-            // Game screen has "Waiting Room: ..." title.
-            await page.waitForSelector("h1", { timeout: 5000 });
+            await page.waitForFunction(() => {
+                const btns = [...document.querySelectorAll('button')];
+                return btns.some(b => b.innerText.includes('START GAME'));
+            }, { timeout: 5000 });
 
-            await page.waitForSelector(startBtnSelector, { timeout: 5000 });
-            await page.click(startBtnSelector);
+            await page.evaluate(() => {
+                const btns = [...document.querySelectorAll('button')];
+                const btn = btns.find(b => b.innerText.includes('START GAME'));
+                if (btn) btn.click();
+            });
         } catch (e) {
             console.error("Start Game button failed:", e.message);
         }
