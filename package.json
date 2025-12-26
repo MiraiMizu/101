@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build": "cd client && npm install && npm run build"
+  },
   "dependencies": {
     "socket.io-client": "^4.8.3"
   }
